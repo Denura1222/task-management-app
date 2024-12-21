@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import {NextUIProvider} from "@nextui-org/system";
+import React from "react";
+import NavBar from "@/components/NavBar";
+import MenuDrawer from "@/components/MenuDrawer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,11 +28,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+    <body
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+    >
+    <NavBar/>
+    <div className="flex overflow-hidden">
+      <MenuDrawer/>
+      <div className="flex-1 bg-customGreen4 overflow-auto p-10">
+        <NextUIProvider>
+          {children}
+        </NextUIProvider>
+      </div>
+    </div>
+    </body>
     </html>
-  );
+);
 }
