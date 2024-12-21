@@ -24,8 +24,8 @@ export type Task = {
 export default function Page() {
   const TasKStages: { id: string; name: 'todo' | 'inProgress' | 'completed' }[] = [
     { id: 'todo', name: 'todo' },
-    { id: 'inProgress', name: 'inProgress' },
     { id: 'completed', name: 'completed' },
+    { id: 'inProgress', name: 'inProgress' },
   ];
   const [isCreateTask,setIsCreateTask] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<'todo' | 'inProgress' | 'completed'>();
