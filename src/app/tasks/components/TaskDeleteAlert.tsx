@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 import {
   Modal,
   ModalContent,
@@ -6,23 +8,19 @@ import {
   ModalFooter,
   Button,
 } from "@nextui-org/react";
-import {Task} from "@/app/tasks/page";
 import { ToastContainer, toast } from 'react-toastify';
+import useTaskStore from "@/app/store/store";
 
-export default function TaskDeleteAlert({isOpen, onOpenChange,taskId}: {isOpen: boolean, onOpenChange: (isOpen: boolean) => void,taskId: string | undefined}) {
+export default function TaskDeleteAlert({isOpen, onOpenChange,taskId}: {isOpen: boolean, onOpenChange: (isOpen: boolean) => void,taskId: string}) {
+  const deleteById = useTaskStore((state) => state.deleteById);
 
   const deleteTask =(onClose: () => void)=> {
-    const storedTasks = localStorage.getItem('tasks');
-    if(storedTasks) {
-      const parsedTasks = JSON.parse(storedTasks) as Task[];
-      const updatedTasks = parsedTasks.filter((task) => task.taskId !== taskId);
-      localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-      toast('successfully deleted task');
-      onClose()
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000)
-    }
+    deleteById(taskId);
+    toast('successfully deleted task');
+    onClose()
+    setTimeout(() => {
+      window.location.reload();
+    }, 3000)
   }
 
   return (

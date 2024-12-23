@@ -5,14 +5,23 @@ import {Colors} from "@/constants/colors";
 import React from "react";
 import {formatDateFromTimestamp} from "@/app/utils/timeParser";
 import {TickCircle} from "iconsax-react";
-import {Task} from "@/app/tasks/page";
 import { motion } from "motion/react"
+import TaskDrawer from "@/app/tasks/components/TaskDrawer";
+import {useDisclosure} from "@nextui-org/react";
+import {Task} from "@/app/store/store";
 
 
 export default function TaskCard({ Task, isDragging }: { Task: Task; isDragging?: boolean }) {
+  const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
+  const handleMouseUp = () => {
+    onOpen()
+  };
   return (
+    <>
+      <TaskDrawer taskId={Task.taskId} isOpenDrawer={isOpen} action={onOpenChange} taskStage={Task.status}/>
     <motion.div
+      onMouseUp={handleMouseUp}
       initial={{rotate: 0}}
       animate={{rotate: isDragging ? 5 : 0}}
       transition={{type: "spring", stiffness: 300, damping: 20}} whileHover={{ scale: 1.1 }} className="border-2 border-dark50 rounded-lg bg-white mb-3">
@@ -64,5 +73,6 @@ export default function TaskCard({ Task, isDragging }: { Task: Task; isDragging?
         </div>
       </div>
     </motion.div>
+    </>
   )
 }

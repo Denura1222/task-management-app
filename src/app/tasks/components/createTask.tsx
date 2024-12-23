@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-
 'use client'
+
 import {useForm} from "react-hook-form"
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -19,16 +19,18 @@ import {
   PopoverTrigger,
   PopoverContent
 } from "@nextui-org/react";
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {formatDateFromTimestamp} from "@/app/utils/timeParser";
 import {v4 as uuidv4} from "uuid";
 import {Priority, Users} from "@/constants/dummy";
 import { motion } from "framer-motion";
+import useTaskStore, {Task} from "@/app/store/store";
 
-const taskSchema = z.object({
+export const taskSchema = z.object({
   taskId:z.string().uuid(),
   TaskName: z.string().min(1, "Task name is required"),
   status:z.enum(["todo", "inProgress", "completed"]),
+  description:z.string().min(1, "Task description is required").optional(),
   dueDate: z
     .number({invalid_type_error: "Due date must be a valid timestamp"})
     .int("Due date must be an integer")
@@ -39,6 +41,7 @@ const taskSchema = z.object({
 
 
 export default function CreateTask({ status }: {status: 'todo' | 'inProgress' | 'completed' }) {
+  const addTask = useTaskStore((state) => state.addTask);
 
   const [selectedAssignee, setSelectedAssignee] = useState(new Set([""]));
   const [selectedPriority, setSelectedPriority] = useState(new Set([""]));
@@ -58,28 +61,30 @@ export default function CreateTask({ status }: {status: 'todo' | 'inProgress' | 
       status: status,
     },
   })
+  const taskAdded = useRef(false);
 
   const watchFields = watch(["TaskName", "dueDate", "priority", "assigneeId"]);
   useEffect(() => {
+    if (taskAdded.current) return;
     const allFieldsFilled = Object.values(watchFields).every((field) => field);
 
     if (allFieldsFilled) {
-      const taskData = {
+      const taskData:Task = {
         taskId: getValues('taskId'),
         TaskName: getValues('TaskName'),
         dueDate: getValues('dueDate'),
         priority: getValues('priority'),
         assigneeId: getValues('assigneeId'),
-        status,
+        description:'',
+        status:status,
       };
-      const Tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-      const updatedTasks = [...Tasks, taskData];
-      localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      addTask(status, taskData);
+      taskAdded.current = true;
       setTimeout(() => {
         window.location.reload();
-      }, 3000)
+      }, 1500)
     }
-  }, [watchFields, status]);
+  }, [watchFields, status, getValues, addTask]);
 
   useEffect(() => {
     if (date) setValue("dueDate", date.getTime());
