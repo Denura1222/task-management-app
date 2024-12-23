@@ -3,29 +3,27 @@
 'use client';
 
 import React, {useEffect, useState} from 'react';
-import {DndContext, useDraggable, useDroppable,} from '@dnd-kit/core';
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  useDraggable,
+  useDroppable, useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import {Add, Record} from "iconsax-react";
 import {Colors} from "@/constants/colors";
 import CreateTask from "@/app/tasks/components/createTask";
 import TaskCard from "@/app/tasks/components/TaskCard";
-import {useDisclosure} from "@nextui-org/react";
-import TaskDrawer from "@/app/tasks/components/TaskDrawer";
+import useTaskStore, {Task} from "@/app/store/store";
 
-export type Task = {
-  taskId: string;
-  TaskName:string,
-  status: 'todo' | 'inProgress' | 'completed';
-  dueDate: number;
-  assigneeId: string;
-  priority: 'Low' | 'Medium' | 'High';
-  description?:string,
-};
 
 export default function Page() {
+  const tasks = useTaskStore((state) => state.tasks);
   const TasKStages: { id: string; name: 'todo' | 'inProgress' | 'completed' }[] = [
     { id: 'todo', name: 'todo' },
-    { id: 'completed', name: 'completed' },
     { id: 'inProgress', name: 'inProgress' },
+    { id: 'completed', name: 'completed' },
   ];
   const [isCreateTask,setIsCreateTask] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<'todo' | 'inProgress' | 'completed'>();
@@ -37,26 +35,29 @@ export default function Page() {
   });
 
   useEffect(() => {
-    const storedTasks = localStorage.getItem('tasks');
-    if(storedTasks) {
-      const parsedTasks = JSON.parse(storedTasks) as Task[];
-      const taskGroup:{ todo: Task[]; inProgress: Task[]; completed: Task[] } = {
-        todo: [],
-        inProgress: [],
-        completed: [],
-      }
-      parsedTasks.forEach((task) => {
-        taskGroup[task.status].push(task);
-      });
-      setTasks(taskGroup);
-    }
-  }, []);
+      setTasks(tasks);
+  }, [tasks]);
+
 
 
   const createTask = (taskStage: 'todo' | 'inProgress' | 'completed') => {
     setIsCreateTask(true);
     setSelectedStatus(taskStage);
   }
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 6,
+      },
+    }),
+
+  );
 
   function handleDragEnd(event: { active: { id: string }; over: { id: string } }) {
     const { active, over } = event;
@@ -87,12 +88,19 @@ export default function Page() {
 
         const updatedTasks = {
           ...prev,
-          [sourceContainer]: sourceItems,
           [over.id]: targetItems,
+          [sourceContainer]: sourceItems,
         };
-        const allTasks = [...updatedTasks.todo, ...updatedTasks.inProgress, ...updatedTasks.completed];
-        localStorage.setItem('tasks', JSON.stringify(allTasks));
 
+
+        const tasksToSave = {
+          state: { tasks: updatedTasks },
+        };
+
+        localStorage.setItem('task-store', JSON.stringify(tasksToSave));
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000)
         return updatedTasks;
       });
     }
@@ -102,11 +110,6 @@ export default function Page() {
     const { attributes, listeners, setNodeRef, transform, isDragging  } = useDraggable({
       id,
     });
-    const {isOpen, onOpen, onOpenChange} = useDisclosure();
-
-    const handleMouseUp = () => {
-      onOpen()
-    };
 
     const style = {
       transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
@@ -116,13 +119,11 @@ export default function Page() {
 
     return (
       <>
-        <TaskDrawer taskId={id} isOpenDrawer={isOpen} onOpenDrawerChange={onOpenChange}/>
         <button
           ref={setNodeRef}
           style={style}
           {...listeners}
           {...attributes}
-          onMouseUp={handleMouseUp}
         >
           {React.cloneElement(children as React.ReactElement, { isDragging })}
         </button>
@@ -142,7 +143,7 @@ export default function Page() {
     return (
       <div ref={setNodeRef} style={style}>
         {(Tasks[id] || []).map((item: Task) => (
-          <Draggable key={item.taskId} id={item.taskId}>
+          <Draggable key={item.taskId} id={item.taskId} >
             <TaskCard Task={item}/>
           </Draggable>
         ))}
@@ -152,7 +153,7 @@ export default function Page() {
 
   return (
     <div>
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="flex flex-row gap-4">
           {TasKStages.map((stage) => (
             <div key={stage.id}
